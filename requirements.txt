@@ -6,3 +6,13 @@ openai
 st-supabase-connection
 python-dotenv
 tiktoken
+pandas
+scikit-learn
+
+
+
+
+
+
+
+
