@@ -76,7 +76,7 @@ system_prompt = """তুমি একজন সহায়ক বাংলা 
 {context}
 """
 prompt = ChatPromptTemplate.from_messages([("system", system_prompt), ("human", "{input}")])
-llm = ChatOpenAI(model_name="gpt-4.1-mini", temperature=0.5, api_key=OPENAI_API_KEY)
+llm = ChatOpenAI(model_name="gpt-4o-mini", temperature=0.5, api_key=OPENAI_API_KEY)
 qa_chain = create_stuff_documents_chain(llm, prompt)
 rag = create_retrieval_chain(retriever, qa_chain)
 
@@ -95,17 +95,31 @@ if st.button("🔄 Generate Model Answers and Evaluate"):
     df["retrieved_context"] = contexts
     st.success("All model answers generated!")
 
-    # --- Auto Evaluation ---
+    # --- Auto Evaluation (Fixed) ---
     st.subheader("LangChain QA Eval (LLM-based)")
-    eval_chain = QAEvalChain.from_llm(ChatOpenAI(model_name="gpt-4.1-mini", temperature=0.0, api_key=OPENAI_API_KEY))
-    eval_inputs = [
-        {"input": row["question"], "prediction": row["model_answer"], "reference": row["answer"]}
-        for _, row in df.iterrows()
-    ]
-    eval_out = eval_chain.evaluate_strings(input_list=eval_inputs)
-    for i, res in enumerate(eval_out):
-        df.at[i, "langchain_score"] = res.get("score")
-        df.at[i, "langchain_grade"] = res.get("value")
+    eval_chain = QAEvalChain.from_llm(ChatOpenAI(model_name="gpt-4o-mini", temperature=0.0, api_key=OPENAI_API_KEY))
+    
+    langchain_scores = []
+    langchain_grades = []
+    
+    # Evaluate each question-answer pair individually
+    for _, row in df.iterrows():
+        try:
+            # Use the correct API with named parameters
+            result = eval_chain.evaluate_strings(
+                prediction=row["model_answer"],
+                reference=row["answer"],
+                input=row["question"]
+            )
+            langchain_scores.append(result.get("score"))
+            langchain_grades.append(result.get("value"))
+        except Exception as e:
+            st.warning(f"Evaluation failed for question: {row['question'][:50]}... Error: {e}")
+            langchain_scores.append(0)
+            langchain_grades.append("INCORRECT")
+    
+    df["langchain_score"] = langchain_scores
+    df["langchain_grade"] = langchain_grades
 
     # --- Cosine Similarity Eval ---
     st.subheader("Cosine Similarity (Embeddings)")
