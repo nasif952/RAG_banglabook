@@ -7,5 +7,12 @@ st-supabase-connection
 python-dotenv
 tiktoken
 pandas
-langchain
 scikit-learn
+
+
+
+
+
+
+
+
