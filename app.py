@@ -14,7 +14,6 @@ from langchain.chains import create_retrieval_chain
 SUPABASE_URL = st.secrets["SUPABASE_URL"]
 SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
-os.environ["OPENAI_API_KEY"] = OPENAI_API_KEY
 
 # Initialize Supabase via Streamlit connector
 supabase_conn = st.connection(
