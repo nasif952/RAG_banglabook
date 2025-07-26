@@ -20,14 +20,15 @@ SUPABASE_URL = st.secrets["SUPABASE_URL"]
 SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
 
-# Your raw GitHub CSV link
 RAW_URL = "https://raw.githubusercontent.com/nasif952/RAG_banglabook/main/qa_gold.csv"
-
 st.title("🤖 Batch QA Generator + Evaluator (Bengali)")
+
+# -- Persistent storage for loaded dataframe
+if "qa_df" not in st.session_state:
+    st.session_state.qa_df = None
 
 ### === Data Source Tabs ===
 tab1, tab2 = st.tabs(["🔗 GitHub Preloaded", "📤 Upload Your Own"])
-df = None
 
 with tab1:
     st.markdown("#### GitHub (qa_gold.csv)")
@@ -36,6 +37,7 @@ with tab1:
             resp = requests.get(RAW_URL)
             resp.raise_for_status()
             df = pd.read_csv(StringIO(resp.text))
+            st.session_state.qa_df = df
             st.success("Loaded qa_gold.csv from GitHub!")
         except Exception as e:
             st.error(f"Failed to load CSV: {e}")
@@ -46,9 +48,13 @@ with tab2:
     if uploaded:
         try:
             df = pd.read_csv(uploaded)
+            st.session_state.qa_df = df
             st.success("CSV uploaded.")
         except Exception as e:
             st.error(f"Failed to load CSV: {e}")
+
+# Use persistent dataframe for all logic below
+df = st.session_state.qa_df
 
 if df is None:
     st.info("Please load or upload a CSV in the tabs above.")
@@ -120,7 +126,6 @@ llm = ChatOpenAI(model_name="gpt-4.1-mini", temperature=0.5, api_key=OPENAI_API_
 qa_chain = create_stuff_documents_chain(llm, prompt)
 rag = create_retrieval_chain(retriever, qa_chain)
 
-# Custom Bengali Evaluation Function
 def custom_bengali_eval(question, model_answer, reference_answer, llm):
     eval_prompt = f"""তুমি একজন বাংলা ভাষার বিশেষজ্ঞ মূল্যায়নকারী।
 
@@ -176,6 +181,7 @@ if st.button("🚀 Generate Model Answers and Evaluate", type="primary"):
             time.sleep(0.5)
     df["model_answer"] = answers
     df["retrieved_context"] = contexts
+    st.session_state.qa_df = df  # save new columns back to session
     st.success("✅ All model answers generated!")
 
     # 2. LangChain Evaluation
@@ -226,7 +232,6 @@ if st.button("🚀 Generate Model Answers and Evaluate", type="primary"):
 
     # Final Results
     st.subheader("📈 Final Results")
-    # Calculate composite scores
     if use_custom_eval and use_cosine_eval:
         df["final_score"] = (df["custom_bengali_score"] * 0.7 + df["cosine_similarity"] * 0.3)
     elif use_custom_eval:
@@ -235,6 +240,8 @@ if st.button("🚀 Generate Model Answers and Evaluate", type="primary"):
         df["final_score"] = (pd.to_numeric(df["langchain_score"], errors="coerce").fillna(0) * 0.7 + df["cosine_similarity"] * 0.3)
     else:
         df["final_score"] = pd.to_numeric(df.get("langchain_score", [0]*len(df)), errors="coerce").fillna(0)
+
+    st.session_state.qa_df = df  # persist
 
     display_cols = ["question", "model_answer", "answer"]
     if use_langchain_eval:
