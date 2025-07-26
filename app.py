@@ -39,9 +39,8 @@ def check_supabase():
 
 def check_openai():
     try:
-        # Minimal OpenAI call
-        openai.api_key = OPENAI_API_KEY
-        openai.Model.list()  # will fail if key invalid
+        client = OpenAI(api_key=OPENAI_API_KEY)
+        client.models.list()  # correct method for v1.0+
         return True, "✅ OpenAI Connected"
     except Exception as e:
         return False, f"❌ OpenAI Error: {e}"
