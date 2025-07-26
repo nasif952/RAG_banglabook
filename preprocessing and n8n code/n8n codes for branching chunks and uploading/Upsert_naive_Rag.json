@@ -1,0 +1,690 @@
+{
+  "name": "Upsert_naive Rag",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are given a JSON object with \"content\" (Bengali/English text) and \"metadata\" (page, type, section, question).\nYour task: Analyze the content only and classify it as one of these categories:\n\nCATEGORIES\n\n1. \"MCQ\" (বহুনির্বাচনী)\n   Classify as \"MCQ\" if ANY of the following is true:\n\n* Contains a question with answer options, e.g.:\n\n  * Options in Bengali: ক, খ, গ, ঘ\n  * Options in English: a, b, c, d\n  * Numbered answers: (১) ক, (২) খ, (৩) গ, (৪) ঘ, etc.\n* Shows an answer key or MCQ result table:\n\n  * Example:  | প্রশ্ন নং | সঠিক উত্তর |\n    \\| ১        | খ          |\n    \\| ২        | গ          |\n\n    * Even if just: \"১ - ক\", \"২ - গ\", \"৩ - ঘ\"\n* Lists multiple questions, each followed by 2+ options or answers.\n\nImportant:\n\n* If content is ONLY the question (no options/answers), it is NOT MCQ.\n* Ignore section/type metadata for the decision; use content patterns only.\n\n2. \"Others\" (অন্যান্য)\n   Classify as \"Others\" if:\n\n* Content is narrative, explanation, story, author bio, notes, Q\\&A without options, creative questions, etc.\n* Examples:\n\n  * নির্বাচযোগ্য উত্তর নেই: \"অনুপমের জীবনের মূল বিষয় ব্যাখ্যা করো।\"\n  * শব্দার্থ/টীকা: \"গজানন—অন্নপূর্ণার কোলে থাকা দেব-সেনাপতি\"\n  * Story, lesson intro, summaries, etc.\n\nFEW-SHOT EXAMPLES\n\nMCQ Example 1:\n{\"content\": \"১। মামাকে ভাগ্য দেবতার প্রধান এজেন্ট বলার কারণ— ক) প্রতিপত্তি  খ) প্রভাব  গ) বিচক্ষণতা  ঘ) কূট বুদ্ধি\", ...}\n→ category: \"MCQ\"\n\nMCQ Example 2:\n{\"content\": \"| প্রশ্ন নং | সঠিক উত্তর |\\n|---|---|\\n|১|খ|\\n|২|গ|\\n|৩|ক|\", ...}\n→ category: \"MCQ\"\n\nMCQ Example 3:\n{\"content\": \"৩। দীপুর চাচার সঙ্গে 'অপরিচিতা' গল্পের কোন চরিত্রের মিল আছে? ক) হরিশ খ) মামা গ) শিক্ষক ঘ) বিনু\", ...}\n→ category: \"MCQ\"\n\nOthers Example 1:\n{\"content\": \"## মূল শব্দ: শব্দের অর্থ ও ব্যাখ্যা\\nগজানন—অন্নপূর্ণার কোলে থাকা দেব-সেনাপতি\", ...}\n→ category: \"Others\"\n\nOthers Example 2:\n{\"content\": \"অনুপমের জীবনের মূল বিষয় ব্যাখ্যা করো।\", ...}\n→ category: \"Others\"\n\nOUTPUT FORMAT\n\nReturn only one of these two strings (no explanation):\n\nMCQ\n\nOthers\n\nKEY REMINDERS:\n\n* Only the presence of options/answers makes MCQ.\n* Narrative, story, explanation, author info, or non-MCQ Q\\&A is \"Others\".\n* Ignore metadata fields for classification logic.\n\nYou are an expert at Bengali educational content classification. Be strict about MCQ patterns!\n\n\ncontent to judge :{{ $json.data.content }}\n{{ $json.data.content }}",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.8,
+      "position": [
+        1840,
+        -825
+      ],
+      "id": "d3c25281-876a-40b3-bca4-c30d221cebca",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n\t\n\t\"identified_catagory\": [\"MCQ\",\"Others\"]\n}\n\n"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        1988,
+        -605
+      ],
+      "id": "b486430d-1f3b-4ae6-aba9-48f5bc1f41d7",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1-mini"
+        },
+        "options": {
+          "responseFormat": "json_object"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1868,
+        -605
+      ],
+      "id": "2d5c2eb4-b6d4-4ba2-b453-ee8a0c24e67a",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "NfsYmZjPB942KOq3",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "formTitle": "Input Form",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "input",
+              "fieldType": "file",
+              "multipleFiles": false,
+              "acceptFileTypes": ".json",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        740,
+        -400
+      ],
+      "id": "32127a51-52c9-4e9f-9cb8-42f6909f681b",
+      "name": "On form submission",
+      "webhookId": "a62e168d-e114-4e26-9f48-69254b3a067a"
+    },
+    {
+      "parameters": {
+        "operation": "fromJson",
+        "binaryPropertyName": "input",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        960,
+        -400
+      ],
+      "id": "a038e148-6efa-4fdc-a439-cf2e64c98a29",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "data",
+        "include": "allOtherFields",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        1180,
+        -400
+      ],
+      "id": "41b4ad0f-9f51-4842-9274-e9c5be923126",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1720,
+        -400
+      ],
+      "id": "8160c326-a213-4c1d-a481-ad97a188c3fb",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "maxItems": 5
+      },
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        1400,
+        -400
+      ],
+      "id": "382a49a1-1c7c-4eef-9280-38a033a31271",
+      "name": "Limit",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "6a951534-98ab-4cf9-879f-00a7621afbe4",
+              "leftValue": "={{ $json.output.identified_catagory[0] }}",
+              "rightValue": "MCQ",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "832f3573-16f3-4ce6-83cd-22a559ebccd3",
+              "leftValue": "={{ $json.output.identified_catagory[0] }}",
+              "rightValue": "mcq",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2216,
+        -825
+      ],
+      "id": "2bd96a2f-162b-45f2-a5a8-82db1f8f48da",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": {
+          "__rl": true,
+          "value": "documents",
+          "mode": "list",
+          "cachedResultName": "documents"
+        },
+        "options": {
+          "queryName": "match_documents"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.1,
+      "position": [
+        2480,
+        -1000
+      ],
+      "id": "9458c0ec-e3d6-4070-9c7a-b9e00b21af0a",
+      "name": "Supabase Vector Store",
+      "credentials": {
+        "supabaseApi": {
+          "id": "XuAyLwZN7jrYQFtj",
+          "name": "Supabase account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": {
+          "__rl": true,
+          "value": "documents",
+          "mode": "list",
+          "cachedResultName": "documents"
+        },
+        "options": {
+          "queryName": "match_documents_others"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.1,
+      "position": [
+        2480,
+        -280
+      ],
+      "id": "a5b2707c-e224-40b1-af2c-c394995d451b",
+      "name": "Supabase Vector Store1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "59qRrGIzfQvgNVJ5",
+          "name": "Supabase account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonMode": "expressionData",
+        "jsonData": "={{ $('Loop Over Items').item.json.data.content }}",
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "page",
+                "value": "={{ $('Loop Over Items').item.json.data['metadata.page'] }}"
+              },
+              {
+                "name": "type",
+                "value": "={{ $('Loop Over Items').item.json.data['metadata.type'] }}"
+              },
+              {
+                "name": "section",
+                "value": "={{ $('Loop Over Items').item.json.data['metadata.section'] }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1,
+      "position": [
+        2556,
+        -677.5
+      ],
+      "id": "4cdfbdb6-fca7-43ff-a386-c1c3b9bbc38a",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        2436,
+        -680
+      ],
+      "id": "8a91d1e7-cd3d-4319-8468-323e560283eb",
+      "name": "Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "NfsYmZjPB942KOq3",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        2584,
+        20
+      ],
+      "id": "ea677f7d-9170-4bdd-815a-e0376946d093",
+      "name": "Embeddings OpenAI1",
+      "credentials": {
+        "openAiApi": {
+          "id": "NfsYmZjPB942KOq3",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chunkSize": 1050,
+        "chunkOverlap": 20
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterTokenSplitter",
+      "typeVersion": 1,
+      "position": [
+        2644,
+        -480
+      ],
+      "id": "310cd68e-4364-48e9-a4ab-8fa3ac3e001d",
+      "name": "Token Splitter"
+    },
+    {
+      "parameters": {
+        "formTitle": "Input Form",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "input",
+              "fieldType": "file",
+              "multipleFiles": false,
+              "acceptFileTypes": ".json",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        560,
+        100
+      ],
+      "id": "61e5b546-3a20-432e-b31d-971f9aa9ad04",
+      "name": "On form submission1",
+      "webhookId": "2280149e-b90d-4970-88e7-30153f6a8bd4"
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "binaryPropertyName": "input",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        900,
+        100
+      ],
+      "id": "b62a555d-dc57-4c3f-8aad-972943abbfe0",
+      "name": "Extract from File1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1060,
+        360
+      ],
+      "id": "191fa07e-7c69-48c5-9c98-e8d8a050f61f",
+      "name": "Embeddings OpenAI4",
+      "credentials": {
+        "openAiApi": {
+          "id": "NfsYmZjPB942KOq3",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonMode": "expressionData",
+        "jsonData": "={{ $json.data }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1,
+      "position": [
+        1340,
+        320
+      ],
+      "id": "1f7dd6ab-d4ef-40e7-9c2e-b97aa786539c",
+      "name": "Default Data Loader1"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": {
+          "__rl": true,
+          "value": "documents",
+          "mode": "list",
+          "cachedResultName": "documents"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.1,
+      "position": [
+        1120,
+        100
+      ],
+      "id": "02c46f61-efab-402e-953b-6774c0d23f4a",
+      "name": "Supabase Vector Store2",
+      "credentials": {
+        "supabaseApi": {
+          "id": "XuAyLwZN7jrYQFtj",
+          "name": "Supabase account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chunkOverlap": 100,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        1440,
+        540
+      ],
+      "id": "7cdafcd8-cbbb-4907-974b-5665b5ba99db",
+      "name": "Recursive Character Text Splitter"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Supabase Vector Store1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Vector Store1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Vector Store": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "ai_document",
+            "index": 0
+          },
+          {
+            "node": "Supabase Vector Store1",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI1": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store1",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Token Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "On form submission1": {
+      "main": [
+        [
+          {
+            "node": "Extract from File1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File1": {
+      "main": [
+        [
+          {
+            "node": "Supabase Vector Store2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI4": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store2",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader1": {
+      "ai_document": [
+        [
+          {
+            "node": "Supabase Vector Store2",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader1",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "bdc44e0e-a338-4a98-be13-c9e9b48916dc",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "d1c759e00e44288383fb29ee4f7ca06a3bdfc8d50324ebc0ac49262448f1598f"
+  },
+  "id": "8jblz4BMlSRjiPju",
+  "tags": []
+}
