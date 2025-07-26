@@ -304,17 +304,25 @@ if len(st.session_state.messages) == 0:
 
 # Tips section
 if len(st.session_state.messages) > 0:
-    st.markdown("---")
     st.markdown("""
-    <div style='background-color: #f0f8ff; padding: 10px; border-radius: 5px; margin-top: 10px;'>
+<div style='
+    background-color: #23272f;
+    padding: 14px 16px;
+    border-radius: 8px;
+    margin-top: 12px;
+    color: #f3f6fb;
+    font-size: 15px;
+    border-left: 4px solid #3b82f6;'
+>
     <small>
     💡 <strong>টিপস:</strong><br>
     • "সে কেমন?" - আগের কথোপকথনের ব্যক্তি সম্পর্কে জিজ্ঞেস করুন<br>
     • "আমি কি কি প্রশ্ন করেছি?" - আপনার প্রশ্নের তালিকা দেখুন<br>
     • "এটা কী?" - আগের উল্লেখিত বিষয় সম্পর্কে আরও জানুন
     </small>
-    </div>
-    """, unsafe_allow_html=True)
+</div>
+""", unsafe_allow_html=True)
+
 
 # Footer
 st.markdown("---")
