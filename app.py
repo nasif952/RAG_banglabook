@@ -99,14 +99,16 @@ rag_chain = create_retrieval_chain(retriever, question_answer_chain)
 st.title("📚 বাংলা HSC26 RAG সহায়ক")
 query = st.text_area("আপনার প্রশ্ন লিখুন:", height=100)
 
-if st.button("উত্তর পান"):
-    with st.spinner("উত্তর তৈরি হচ্ছে…"):
-        try:
-            res = rag_chain.invoke({"input": query})
-            answer = res.get("output") or res.get("result") or "তথ্য নেই"
-            st.success(answer)
-            st.markdown("#### তথ্যসূত্র দেখুন:")
-            for idx, doc in enumerate(res.get("source_documents", []), 1):
-                st.write(f"Chunk {idx}: {doc.page_content[:200]}…")
-        except Exception as e:
-            st.error(f"❌ Error generating answer: {e}")
+if st.button("উত্তর পান / Get Answer") or query:
+    with st.spinner("উত্তর খোঁজা হচ্ছে..."):
+        result = rag_chain.invoke({"input": query})
+        answer = result.get("answer", "তথ্য নেই")
+        st.markdown("**উত্তর:**")
+        st.success(answer)
+
+        # Optional: Show retrieved context for transparency/debugging
+        with st.expander("তথ্যসূত্র (Retrieved Chunks)"):
+            for i, doc in enumerate(result.get("context", []), 1):
+                st.markdown(f"**Chunk {i}:** {doc.page_content}")
+
+st.caption("Powered by LangChain, Supabase, OpenAI, and Streamlit")
