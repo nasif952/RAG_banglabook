@@ -1,0 +1,11 @@
+streamlit
+langchain
+langchain-community
+langchain-openai
+openai
+st-supabase-connection
+python-dotenv
+tiktoken
+pandas
+langchain
+scikit-learn
